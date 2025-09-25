@@ -71,14 +71,50 @@ class LCG:
         while True:
             yield self.next_int()
 
+def raw_moments(data: np.array, k_max: int = 4) -> list[float]:
+    """return list with k raw moments"""
+    # print(data)
+    n = data.size
+    return [np.sum(np.power(data,k))/n for k in range(1, k_max+1)]
+
+def central_moments_from_raw(raw: list[float]) -> list[float]:
+    # raw is [mu'_1, mu'_2, mu'_3, mu'_4]
+    mu1 = raw[0]
+    mu2p, mu3p, mu4p = raw[1], raw[2], raw[3]
+    mu2 = mu2p - mu1**2
+    mu3 = mu3p - 3*mu1*mu2p + 2*mu1**3
+    mu4 = mu4p - 4*mu1*mu3p + 6*mu1**2*mu2p - 3*mu1**4
+    return [mu1, mu2, mu3, mu4]
+
+def expected_moments(min: float, max: float) -> list:
+    """Return expected moments for a uniform distribution from min to max"""
+    mu1 = (min+max)/2
+    mu2 = (max-min)**2 / 12
+    mu3 = 0.
+    mu4 = (max-min)**4 / 80
+    exp =[mu1, mu2, mu3, mu4]
+    return exp
+
 if __name__ == "__main__":
     r0=10000
     if len(sys.argv)>1: r0=int(sys.argv[1])
     rng = LCG(seed=r0)
-    print(rng.next_int())     # integer in [0, 2**32-1]
-    print(rng.random())       # float in [0.0, 1.0)
-    print(rng.randrange(10))  # integer in [0,9]
-    print(rng.randrange(5, 15)) # integer in [5,14]
-    print(rng.random_intarray(50,150,1000))
-    print(rng.random_array(50,150,1000))
+    # print(rng.next_int())     # integer in [0, 2**32-1]
+    # print(rng.random())       # float in [0.0, 1.0)
+    # print(rng.randrange(10))  # integer in [0,9]
+    # print(rng.randrange(5, 15)) # integer in [5,14]
+    # print(rng.random_intarray(50,150,1000))
+    samples = 1000000
+    min = 0.
+    max = 1.
+    print(f"Generating {samples} random numbers between [{min}, {max}]")
+    random_million = rng.random_array(min, max, samples)
+    print(f"Mean: {np.mean(random_million)}, Std Dev: {np.std(random_million)}")
+
+    # raw moments for X
+    raw = raw_moments(random_million, 4)  # [E[X], E[X^2], E[X^3], E[X^4]]
+    central = central_moments_from_raw(raw) # get central moments 1-4
+    central_exp = expected_moments(min, max)
+    for i in range(4):
+        print(f"Moment {i+1} Actual: {central[i]}, Expected: {central_exp[i]}")
 
